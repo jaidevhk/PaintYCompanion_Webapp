@@ -14,7 +14,7 @@ Local test: `python -m http.server` in this folder, then open `http://localhost:
 ## Using your own Panaji outline map
 - **Easiest for many devices:** put the image in `assets/` (e.g. `assets/panaji-outline.png`), push, then
   Settings → Background → **Image file** → type `assets/panaji-outline.png`.
-- Or overwrite `assets/panaji-map.svg` with your own map. It's the built-in default.
+- Or overwrite `assets/panjim-outline.svg` with your own map. It is the built-in default.
 - **One device only:** Settings → Background → **Upload** stores the image on that device.
 
 The board takes the shape of the map image. Black-on-white outline maps work best with
@@ -29,4 +29,4 @@ Settings are saved per device.
 - `index.html`: markup
 - `style.css`: styles
 - `app.js`: painting, undo/redo (30 steps), settings
-- `assets/panaji-map.svg`: built-in stylised map (a sketch, not to scale)
+- `assets/panjim-outline.svg`: outline of the City of Panaji boundary; coastline from OpenStreetMap (© OpenStreetMap contributors, ODbL)

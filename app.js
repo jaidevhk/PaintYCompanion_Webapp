@@ -5,7 +5,7 @@
   // ---------- Config ----------
   const HISTORY_STEPS = 30;
   const WORLD_LONG_SIDE = 2400;        // painting resolution (long edge, px)
-  const BUILTIN_MAP = 'assets/panaji-map.svg';
+  const BUILTIN_MAP = 'assets/panjim-outline.svg';
   const STORE_KEY = 'paintyc.settings.v1';
 
   const DEFAULT_COLORS = [
