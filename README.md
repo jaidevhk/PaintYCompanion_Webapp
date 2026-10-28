@@ -21,7 +21,7 @@ The canvas fills the screen in portrait and landscape; the map is scaled as larg
 **Keep outlines on top of paint** turned on: the lines stay visible over the colour, like a colouring book.
 
 ## Settings (gear, top-right)
-Background, map opacity, palette position (bottom / top / left / right), colours (name + hex, add/remove),
+Background, map opacity, map rotation and size, palette position (bottom / top / left / right), colours (name + hex, add/remove),
 brush size, pen pressure, pen-only mode (fingers ignored on the canvas), save painting as PNG, full screen.
 Settings are saved per device.
 

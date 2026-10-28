@@ -25,6 +25,8 @@
     bgUrl: '',
     uploadName: '',
     bgOpacity: 1,
+    mapRotate: 0,           // degrees
+    mapScale: 1,            // 1 = fit to screen
     outlinesTop: true,
     palettePos: 'bottom',   // bottom | top | left | right
     colors: DEFAULT_COLORS,
@@ -341,8 +343,9 @@
     view = { x: mx - map.x * s, y: my - map.y * s, w: world.w * s, h: world.h * s, s };
 
     // Rasterise background at exact screen resolution (keeps SVG lines crisp).
-    bgLayer.width = Math.max(1, Math.round(map.w * s * dpr));
-    bgLayer.height = Math.max(1, Math.round(map.h * s * dpr));
+    const k = S.mapScale || 1;                         // raster at the scaled size so it stays crisp
+    bgLayer.width = Math.max(1, Math.round(map.w * s * k * dpr));
+    bgLayer.height = Math.max(1, Math.round(map.h * s * k * dpr));
     bgctx.clearRect(0, 0, bgLayer.width, bgLayer.height);
     if (bgImage) {
       try { bgctx.drawImage(bgImage, 0, 0, bgLayer.width, bgLayer.height); } catch (_) {}
@@ -364,7 +367,15 @@
     ctx.save();
     ctx.imageSmoothingQuality = 'high';
     const bx = v.x + map.x * v.s, by = v.y + map.y * v.s, bw = map.w * v.s, bh = map.h * v.s;
-    const drawBg = () => { if (bgImage) { ctx.globalAlpha = S.bgOpacity; ctx.drawImage(bgLayer, bx, by, bw, bh); ctx.globalAlpha = 1; } };
+    const k = S.mapScale || 1, rot = (S.mapRotate || 0) * Math.PI / 180;
+    const drawBg = () => {
+      if (!bgImage) return;
+      ctx.save();
+      ctx.globalAlpha = S.bgOpacity;
+      ctx.translate(bx + bw / 2, by + bh / 2); ctx.rotate(rot);
+      ctx.drawImage(bgLayer, -bw * k / 2, -bh * k / 2, bw * k, bh * k);
+      ctx.restore();
+    };
     if (!S.outlinesTop) drawBg();
     ctx.drawImage(paint, v.x, v.y, v.w, v.h);
     if (S.outlinesTop) { ctx.globalCompositeOperation = 'multiply'; drawBg(); ctx.globalCompositeOperation = 'source-over'; }
@@ -515,6 +526,20 @@
     applyBackground();
   });
   $('bgOpacity').addEventListener('input', e => { S.bgOpacity = +e.target.value; saveSettings(); requestRender(); });
+  const showMapTf = () => {
+    $('rotOut').textContent = Math.round(S.mapRotate) + '°';
+    $('scaleOut').textContent = Math.round(S.mapScale * 100) + '%';
+  };
+  $('mapRotate').addEventListener('input', e => { S.mapRotate = +e.target.value; showMapTf(); saveSettings(); requestRender(); });
+  let scaleTimer = 0;
+  $('mapScale').addEventListener('input', e => {
+    S.mapScale = +e.target.value / 100; showMapTf(); saveSettings(); requestRender();
+    clearTimeout(scaleTimer); scaleTimer = setTimeout(layout, 120);   // re-rasterise crisp once the slider settles
+  });
+  $('resetMapTf').addEventListener('click', () => {
+    S.mapRotate = 0; S.mapScale = 1; saveSettings();
+    $('mapRotate').value = 0; $('mapScale').value = 100; showMapTf(); layout();
+  });
   $('outlinesTop').addEventListener('change', e => { S.outlinesTop = e.target.checked; saveSettings(); requestRender(); });
   $('brushSize').addEventListener('input', e => { S.brushSize = +e.target.value; $('sizeOut').textContent = S.brushSize; saveSettings(); });
   $('pressure').addEventListener('change', e => { S.pressure = e.target.checked; saveSettings(); });
@@ -564,12 +589,25 @@
   // Save / fullscreen
   $('saveImage').addEventListener('click', () => {
     const out = document.createElement('canvas');
-    out.width = map.w; out.height = map.h;          // saved image = the map area
+    // saved image = the area the (rotated / scaled) map covers
+    const k = S.mapScale || 1, rot = (S.mapRotate || 0) * Math.PI / 180;
+    const cw = map.w * k, ch = map.h * k, c = Math.abs(Math.cos(rot)), sn = Math.abs(Math.sin(rot));
+    const ew = cw * c + ch * sn, eh = cw * sn + ch * c;
+    const cx = map.x + map.w / 2, cy = map.y + map.h / 2;
+    const x0 = Math.max(0, Math.round(cx - ew / 2)), y0 = Math.max(0, Math.round(cy - eh / 2));
+    const x1 = Math.min(world.w, Math.round(cx + ew / 2)), y1 = Math.min(world.h, Math.round(cy + eh / 2));
+    out.width = x1 - x0; out.height = y1 - y0;
     const o = out.getContext('2d');
-    o.fillStyle = '#fff'; o.fillRect(0, 0, map.w, map.h);
-    const bg = () => { if (bgImage) { o.globalAlpha = S.bgOpacity; o.drawImage(bgImage, 0, 0, map.w, map.h); o.globalAlpha = 1; } };
+    o.fillStyle = '#fff'; o.fillRect(0, 0, out.width, out.height);
+    const bg = () => {
+      if (!bgImage) return;
+      o.save(); o.globalAlpha = S.bgOpacity;
+      o.translate(cx - x0, cy - y0); o.rotate(rot);
+      o.drawImage(bgImage, -cw / 2, -ch / 2, cw, ch);
+      o.restore();
+    };
     if (!S.outlinesTop) bg();
-    o.drawImage(paint, map.x, map.y, map.w, map.h, 0, 0, map.w, map.h);
+    o.drawImage(paint, x0, y0, out.width, out.height, 0, 0, out.width, out.height);
     if (S.outlinesTop) { o.globalCompositeOperation = 'multiply'; bg(); o.globalCompositeOperation = 'source-over'; }
     out.toBlob(blob => {
       if (!blob) return;
@@ -593,6 +631,9 @@
     $('bgUrl').value = S.bgUrl;
     $('uploadName').textContent = S.uploadName || 'No image chosen';
     $('bgOpacity').value = S.bgOpacity;
+    $('mapRotate').value = S.mapRotate;
+    $('mapScale').value = Math.round(S.mapScale * 100);
+    showMapTf();
     $('outlinesTop').checked = S.outlinesTop;
     $('brushSize').value = S.brushSize;
     $('sizeOut').textContent = S.brushSize;
