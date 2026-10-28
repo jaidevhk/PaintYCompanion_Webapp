@@ -4,7 +4,8 @@
 
   // ---------- Config ----------
   const HISTORY_STEPS = 30;
-  const WORLD_LONG_SIDE = 2400;        // painting resolution (long edge, px)
+  const MAP_LONG_SIDE = 1800;          // map resolution inside the painting (long edge, px)
+  const WORLD_MAX_SIDE = 3200;         // cap on the painting canvas (memory)
   const BUILTIN_MAP = 'assets/panjim-outline.svg';
   const STORE_KEY = 'paintyc.settings.v1';
 
@@ -51,6 +52,7 @@
   const S = loadSettings();
   S.colors = S.colors.map(c => ({ name: String(c.name || ''), hex: String(c.hex || '#000000') }));
   if (S.selected >= S.colors.length) S.selected = 0;
+  if (/panaji-map\.svg/.test(S.bgUrl)) { S.bgMode = 'builtin'; S.bgUrl = ''; }
 
   // Uploaded background is kept in IndexedDB (too big for localStorage).
   const idb = {
@@ -103,13 +105,21 @@
 
   let bgImage = null;
   let world = { w: 0, h: 0 };
+  let map = { x: 0, y: 0, w: 0, h: 0 };   // where the map sits inside the painting (world px)
   let view = { x: 0, y: 0, w: 0, h: 0, s: 1 }; // board rect on screen (CSS px), s = screen px per world px
   let dpr = 1;
 
+  // The painting is larger than the map so the whole screen is paintable in portrait AND landscape:
+  // the map sits in the middle, the extra room covers the screen's widest aspect either way round.
   function setWorld(aspect) {
-    let w, h;
-    if (aspect >= 1) { w = WORLD_LONG_SIDE; h = Math.round(WORLD_LONG_SIDE / aspect); }
-    else { h = WORLD_LONG_SIDE; w = Math.round(WORLD_LONG_SIDE * aspect); }
+    const sw = screen.width || innerWidth, sh = screen.height || innerHeight;
+    const room = Math.min(sw, sh) < 600 ? 1.65 : 1.3;   // phones lose more height to the palette / undo bar
+    const F = Math.min(3.8, Math.max(1.2, Math.max(sw, sh) / Math.min(sw, sh)) * room);
+    const L = Math.min(MAP_LONG_SIDE, Math.floor(WORLD_MAX_SIDE / F));
+    const mw = aspect >= 1 ? L : Math.round(L * aspect);
+    const mh = aspect >= 1 ? Math.round(L / aspect) : L;
+    const w = Math.round(Math.max(mw, mh * F)), h = Math.round(Math.max(mh, mw * F));
+    map = { x: Math.round((w - mw) / 2), y: Math.round((h - mh) / 2), w: mw, h: mh };
     if (w === world.w && h === world.h) return;
 
     // Keep the current painting: fit it into the new board, history resets.
@@ -278,6 +288,12 @@
     requestRender();
   }
   board.addEventListener('pointerup', endStroke);
+  let triedFs = false;
+  window.addEventListener('pointerup', () => {
+    if (triedFs) return; triedFs = true;
+    const el = document.documentElement, standalone = matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;
+    if (!standalone && !document.fullscreenElement && el.requestFullscreen) el.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
+  });
   board.addEventListener('pointercancel', endStroke);
   board.addEventListener('lostpointercapture', endStroke);
 
@@ -302,13 +318,14 @@
   function boardArea() {
     const W = innerWidth, H = innerHeight;
     const r = paletteEl.getBoundingClientRect();
-    const g = 12;
-    let t = 68, b = g, l = g, rt = g;
+    const g = 8;                       // map fills the screen; only the palette side is kept clear
+    let t = g, b = g, l = g, rt = g;
     const pos = S.palettePos;
+    if (H < 600 && pos !== 'top') t = 64;     // short landscape screens: keep the map clear of undo/redo
     if (pos === 'bottom') b = H - r.top + g;
-    if (pos === 'top') { t = r.bottom + g; b = 68; }
+    if (pos === 'top') t = r.bottom + g;
     if (pos === 'left') l = r.right + g;
-    if (pos === 'right') { rt = W - r.left + g; b = 64; }
+    if (pos === 'right') rt = W - r.left + g;
     return { x: l, y: t, w: Math.max(50, W - l - rt), h: Math.max(50, H - t - b) };
   }
 
@@ -319,13 +336,13 @@
     board.height = Math.round(H * dpr);
     const a = boardArea();
     if (!world.w) setWorld(a.w / a.h);
-    const s = Math.min(a.w / world.w, a.h / world.h);
-    const w = world.w * s, h = world.h * s;
-    view = { x: a.x + (a.w - w) / 2, y: a.y + (a.h - h) / 2, w, h, s };
+    const s = Math.min(a.w / map.w, a.h / map.h);      // map as big as the screen allows
+    const mx = a.x + (a.w - map.w * s) / 2, my = a.y + (a.h - map.h * s) / 2;
+    view = { x: mx - map.x * s, y: my - map.y * s, w: world.w * s, h: world.h * s, s };
 
     // Rasterise background at exact screen resolution (keeps SVG lines crisp).
-    bgLayer.width = Math.max(1, Math.round(w * dpr));
-    bgLayer.height = Math.max(1, Math.round(h * dpr));
+    bgLayer.width = Math.max(1, Math.round(map.w * s * dpr));
+    bgLayer.height = Math.max(1, Math.round(map.h * s * dpr));
     bgctx.clearRect(0, 0, bgLayer.width, bgLayer.height);
     if (bgImage) {
       try { bgctx.drawImage(bgImage, 0, 0, bgLayer.width, bgLayer.height); } catch (_) {}
@@ -341,17 +358,13 @@
     const v = view;
 
     // Paper
-    ctx.save();
-    ctx.shadowColor = 'rgba(30,34,40,0.10)';
-    ctx.shadowBlur = 18; ctx.shadowOffsetY = 4;
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(v.x, v.y, v.w, v.h);
-    ctx.restore();
+    ctx.fillRect(0, 0, innerWidth, innerHeight);
 
     ctx.save();
-    ctx.beginPath(); ctx.rect(v.x, v.y, v.w, v.h); ctx.clip();
     ctx.imageSmoothingQuality = 'high';
-    const drawBg = () => { if (bgImage) { ctx.globalAlpha = S.bgOpacity; ctx.drawImage(bgLayer, v.x, v.y, v.w, v.h); ctx.globalAlpha = 1; } };
+    const bx = v.x + map.x * v.s, by = v.y + map.y * v.s, bw = map.w * v.s, bh = map.h * v.s;
+    const drawBg = () => { if (bgImage) { ctx.globalAlpha = S.bgOpacity; ctx.drawImage(bgLayer, bx, by, bw, bh); ctx.globalAlpha = 1; } };
     if (!S.outlinesTop) drawBg();
     ctx.drawImage(paint, v.x, v.y, v.w, v.h);
     if (S.outlinesTop) { ctx.globalCompositeOperation = 'multiply'; drawBg(); ctx.globalCompositeOperation = 'source-over'; }
@@ -360,6 +373,7 @@
 
   let resizeTimer = 0;
   window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(layout, 60); });
+  window.addEventListener('orientationchange', () => setTimeout(layout, 250));
 
   // ---------- Background ----------
   let bgUrlObject = null;
@@ -550,12 +564,12 @@
   // Save / fullscreen
   $('saveImage').addEventListener('click', () => {
     const out = document.createElement('canvas');
-    out.width = world.w; out.height = world.h;
+    out.width = map.w; out.height = map.h;          // saved image = the map area
     const o = out.getContext('2d');
-    o.fillStyle = '#fff'; o.fillRect(0, 0, world.w, world.h);
-    const bg = () => { if (bgImage) { o.globalAlpha = S.bgOpacity; o.drawImage(bgImage, 0, 0, world.w, world.h); o.globalAlpha = 1; } };
+    o.fillStyle = '#fff'; o.fillRect(0, 0, map.w, map.h);
+    const bg = () => { if (bgImage) { o.globalAlpha = S.bgOpacity; o.drawImage(bgImage, 0, 0, map.w, map.h); o.globalAlpha = 1; } };
     if (!S.outlinesTop) bg();
-    o.drawImage(paint, 0, 0);
+    o.drawImage(paint, map.x, map.y, map.w, map.h, 0, 0, map.w, map.h);
     if (S.outlinesTop) { o.globalCompositeOperation = 'multiply'; bg(); o.globalCompositeOperation = 'source-over'; }
     out.toBlob(blob => {
       if (!blob) return;
