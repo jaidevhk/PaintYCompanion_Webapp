@@ -1,4 +1,4 @@
-# PaintYCompanion
+# Paint your Panaji (PaintYCompanion)
 
 A clean touch & pen painting app for Android tablets and phones. Paint over a map of Panaji.
 Plain HTML/CSS/JS with no build step and no dependencies.
@@ -19,6 +19,13 @@ Settings → Background → **Image file**.
 
 The canvas fills the screen in portrait and landscape; the map is scaled as large as fits, and a painting survives rotation. Black-on-white outline maps work best with
 **Keep outlines on top of paint** turned on: the lines stay visible over the colour, like a colouring book.
+
+## How it plays
+- Title screen: **Begin** goes straight to painting; **How to play** runs a 5-step guided tour.
+- Colours paint only inside the Panjim outline. In Settings → Colours, tick **Outside** on a colour to let it go past the edge.
+- **Save!** (top-left) downloads the painting as `PaintYourPanaji_0001_<date-time>.png`, `_0002_`, … in save order,
+  into the tablet's Downloads folder. Settings → Saved paintings shows the count and can restart the numbering.
+- Painting makes heavy brick sounds, a little different each time (Settings → Sound to turn off or change volume).
 
 ## Settings (gear, top-right)
 Background, map opacity, map rotation and size, palette position (bottom / top / left / right), colours (name + hex, add/remove),

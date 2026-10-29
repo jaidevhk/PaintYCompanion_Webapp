@@ -6,13 +6,22 @@
   <meta name="theme-color" content="#ffffff">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>PaintYCompanion</title>
+  <title>Paint your Panaji</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css?v=7">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap">
+  <link rel="stylesheet" href="style.css?v=8">
 </head>
-<body data-palette="bottom">
+<body data-palette="bottom" class="title-on">
   <canvas id="board" aria-label="Painting canvas"></canvas>
+
+  <!-- Save -->
+  <button id="saveBtn" class="save-btn" aria-label="Save painting">
+    <svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+    <span>Save!</span>
+  </button>
 
   <!-- Undo / redo -->
   <div id="history" class="pill">
@@ -36,11 +45,40 @@
   <!-- Colour name flash -->
   <div id="flash" aria-live="polite"></div>
 
+  <!-- Title screen -->
+  <section id="title" aria-label="Paint your Panaji">
+    <img class="title-map" src="assets/panjim-outline.svg" alt="">
+    <div class="title-inner">
+      <p class="title-kicker">Panaji · 2050</p>
+      <h1 class="title-text">Paint your <span>Panaji</span></h1>
+      <div id="titleBricks" class="title-bricks" aria-hidden="true"></div>
+      <div class="title-actions">
+        <button id="beginBtn" class="big-btn primary">Begin</button>
+        <button id="howBtn" class="big-btn">How to play</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Guided tour -->
+  <div id="tour" hidden>
+    <div id="tourSpot"></div>
+    <div id="tourCard" role="dialog" aria-live="polite">
+      <p id="tourStep" class="tour-step"></p>
+      <h2 id="tourTitle"></h2>
+      <p id="tourText"></p>
+      <p id="tourHint" class="tour-hint"></p>
+      <div class="tour-actions">
+        <button id="tourSkip" class="btn ghost">Skip</button>
+        <button id="tourNext" class="btn">Next</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Settings sheet -->
   <div id="scrim" hidden></div>
   <aside id="settings" hidden aria-label="Settings">
     <header>
-      <h1>PaintYCompanion</h1>
+      <h1>Paint your Panaji</h1>
       <button id="closeSettings" class="icon-btn" aria-label="Close settings">
         <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
       </button>
@@ -95,6 +133,7 @@
 
     <section>
       <h2>Colours</h2>
+      <p class="fine sub">Colours paint only inside the map. Tick <b>Outside</b> to let a colour go past the map’s edge.</p>
       <div id="colorList"></div>
       <div class="row gap">
         <button id="addColor" class="btn">Add colour</button>
@@ -119,16 +158,33 @@
     </section>
 
     <section>
-      <h2>Painting</h2>
+      <h2>Sound</h2>
+      <label class="row">
+        <span>Brick sounds while painting</span>
+        <input id="soundOn" type="checkbox" class="toggle">
+      </label>
+      <label class="row">
+        <span>Volume</span>
+        <input id="soundVol" type="range" min="0" max="1" step="0.05">
+      </label>
+    </section>
+
+    <section>
+      <h2>Saved paintings</h2>
+      <div class="row">
+        <span>Saved on this device: <output id="saveCount"></output></span>
+        <button id="resetCount" class="btn ghost">Restart numbering</button>
+      </div>
       <div class="row gap">
-        <button id="saveImage" class="btn">Save as image</button>
+        <button id="saveImage" class="btn">Save now</button>
         <button id="fullscreen" class="btn ghost">Full screen</button>
+        <button id="toTitle" class="btn ghost">Title screen</button>
       </div>
     </section>
 
     <p class="fine">Panjim (City of Panaji) outline. Coastline © OpenStreetMap contributors.</p>
   </aside>
 
-  <script src="app.js?v=7"></script>
+  <script src="app.js?v=8"></script>
 </body>
 </html>
