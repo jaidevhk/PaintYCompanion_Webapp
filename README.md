@@ -9,6 +9,15 @@ Plain HTML/CSS/JS with no build step and no dependencies.
 3. Open `https://<you>.github.io/<repo>/` on the tablet.
 4. Chrome menu → **Add to Home screen** and it opens full screen like an app.
 
+### Offline (no internet at the venue)
+1. With internet, open the GitHub Pages link on the tablet once and let it load.
+2. Chrome menu → **Add to Home screen** (or **Install app**).
+3. Check Settings (gear): the bottom line should say **✓ Ready to work offline on this device**.
+4. From then on, open it from the home-screen icon; it works with no internet.
+   When the tablet is online it picks up any new version you push automatically.
+
+Opening `index.html` directly as a file does **not** work properly (browsers block map-only painting and saving for files).
+
 Local test: `python -m http.server` in this folder, then open `http://localhost:8000`.
 
 ## The map
@@ -36,4 +45,6 @@ Settings are saved per device.
 - `index.html`: markup
 - `style.css`: styles
 - `app.js`: painting, undo/redo (30 steps), settings
+- `sw.js`: offline support (keeps a copy of the app on the device)
+- `assets/icon-192.png`, `assets/icon-512.png`: home-screen icons
 - `assets/panjim-outline.svg`: outline of the City of Panaji boundary; coastline from OpenStreetMap (© OpenStreetMap contributors, ODbL)

@@ -1008,6 +1008,16 @@
     return { start, stop, event, get active() { return active; } };
   })();
 
+  // ---------- Offline (service worker) ----------
+  function setOffline(msg, ok) { const el = $('offlineStatus'); if (el) { el.textContent = msg; el.classList.toggle('ok', !!ok); } }
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    navigator.serviceWorker.register('sw.js').then(() => navigator.serviceWorker.ready)
+      .then(() => setOffline('✓ Ready to work offline on this device', true))
+      .catch(() => setOffline('Offline mode unavailable in this browser'));
+  } else {
+    setOffline('Offline mode needs the web address (open it from GitHub Pages, not a file)');
+  }
+
   // ---------- Boot ----------
   renderPalette();
   syncSettingsUI();

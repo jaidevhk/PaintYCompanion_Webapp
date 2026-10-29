@@ -422,3 +422,6 @@ body.title-on #palette, body.title-on #history, body.title-on #settingsBtn, body
 #title.idle .title-text, #title.idle .title-kicker {
   text-shadow: 0 0 2px #fff, 0 0 10px #fff, 0 0 26px rgba(255,255,255,.95), 0 0 50px rgba(255,255,255,.8);
 }
+
+.fine.offline { margin-top: 14px; }
+.fine.offline.ok { color: var(--go); font-weight: 600; }
