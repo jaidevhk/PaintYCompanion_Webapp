@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap">
-  <link rel="stylesheet" href="style.css?v=8">
+  <link rel="stylesheet" href="style.css?v=9">
 </head>
 <body data-palette="bottom" class="title-on">
   <canvas id="board" aria-label="Painting canvas"></canvas>
@@ -170,6 +170,15 @@
     </section>
 
     <section>
+      <h2>Idle screen</h2>
+      <label class="row">
+        <span>Show Begin / How to play after <output id="idleOut"></output></span>
+        <input id="idleSecs" type="range" min="0" max="60" step="1">
+      </label>
+      <p class="fine sub">The buttons fade in over the painting when nobody has touched the screen for this long. The painting stays. Set to 0 to turn off.</p>
+    </section>
+
+    <section>
       <h2>Saved paintings</h2>
       <div class="row">
         <span>Saved on this device: <output id="saveCount"></output></span>
@@ -185,6 +194,6 @@
     <p class="fine">Panjim (City of Panaji) outline. Coastline © OpenStreetMap contributors.</p>
   </aside>
 
-  <script src="app.js?v=8"></script>
+  <script src="app.js?v=9"></script>
 </body>
 </html>

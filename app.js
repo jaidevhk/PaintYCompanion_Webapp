@@ -36,6 +36,7 @@
     pressure: true,
     penOnly: false,
     sound: true,
+    idleSecs: 8,            // 0 = never fade the title back in
     soundVol: 0.8,
   };
 
@@ -603,7 +604,7 @@
   // ---------- Settings UI ----------
   const sheet = $('settings'), scrim = $('scrim');
   function openSettings() { syncSettingsUI(); sheet.hidden = false; scrim.hidden = false; }
-  function closeSettings() { sheet.hidden = true; scrim.hidden = true; }
+  function closeSettings() { sheet.hidden = true; scrim.hidden = true; armIdle(); }
   $('settingsBtn').addEventListener('click', openSettings);
   $('closeSettings').addEventListener('click', closeSettings);
   scrim.addEventListener('click', closeSettings);
@@ -671,6 +672,8 @@
   $('soundVol').addEventListener('input', e => { S.soundVol = +e.target.value; saveSettings(); Sound.volume(); });
   $('soundVol').addEventListener('change', () => { Sound.unlock(); Sound.brick(1); });
   $('toTitle').addEventListener('click', () => { closeSettings(); showTitle(); });
+  const showIdle = () => { $('idleOut').textContent = S.idleSecs > 0 ? S.idleSecs + ' s' : 'off'; };
+  $('idleSecs').addEventListener('input', e => { S.idleSecs = +e.target.value; showIdle(); saveSettings(); armIdle(); });
 
   // Colour editor
   const colorList = $('colorList');
@@ -786,6 +789,8 @@
     $('soundOn').checked = S.sound;
     $('soundVol').value = S.soundVol;
     $('saveCount').textContent = getCount();
+    $('idleSecs').value = S.idleSecs;
+    showIdle();
     showBgRows();
     renderColorEditor();
   }
@@ -886,16 +891,47 @@
     const standalone = matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;
     if (!standalone && !document.fullscreenElement && el.requestFullscreen) el.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
   }
+  let titleTimer = 0;
   function hideTitle() {
+    clearTimeout(titleTimer);
     document.body.classList.remove('title-on');
-    titleEl.hidden = true;
-    setTimeout(layout, 60);
+    if (titleEl.classList.contains('idle')) {            // fade the overlay away, painting untouched
+      titleEl.classList.remove('show');
+      titleTimer = setTimeout(() => { titleEl.hidden = true; titleEl.classList.remove('idle'); }, 450);
+    } else {
+      titleEl.hidden = true;
+      setTimeout(layout, 60);
+    }
+    armIdle();
   }
   function showTitle() {
     Tour.stop();
+    clearTimeout(titleTimer);
+    titleEl.classList.remove('idle', 'show');
     titleEl.hidden = false;
     document.body.classList.add('title-on');
   }
+
+  // ---------- Idle: fade Begin / How to play back in over the painting ----------
+  let idleTimer = 0;
+  function armIdle() {
+    clearTimeout(idleTimer);
+    if (S.idleSecs > 0) idleTimer = setTimeout(goIdle, S.idleSecs * 1000);
+  }
+  function goIdle() {
+    if (!titleEl.hidden || stroke || Tour.active || !sheet.hidden) return armIdle();
+    clearTimeout(titleTimer);
+    titleEl.classList.add('idle');
+    titleEl.classList.remove('show');
+    titleEl.hidden = false;
+    void titleEl.offsetWidth;                            // let the fade-in run
+    titleEl.classList.add('show');
+    document.body.classList.add('title-on');
+  }
+  ['pointerdown', 'pointermove', 'keydown', 'wheel'].forEach(ev =>
+    window.addEventListener(ev, () => { if (titleEl.hidden) armIdle(); }, { passive: true, capture: true }));
+  // tapping empty space on the idle overlay goes back to the painting
+  titleEl.addEventListener('click', e => { if (titleEl.classList.contains('idle') && !e.target.closest('button')) hideTitle(); });
   $('beginBtn').addEventListener('click', () => { Sound.unlock(); goFullscreen(); hideTitle(); setTimeout(() => Sound.brick(1), 60); });
   $('howBtn').addEventListener('click', () => { Sound.unlock(); goFullscreen(); hideTitle(); setTimeout(() => Tour.start(), 450); });
 

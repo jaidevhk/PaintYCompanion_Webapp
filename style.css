@@ -411,3 +411,14 @@ body.title-on #palette, body.title-on #history, body.title-on #settingsBtn, body
 
 .swatch-name.long { font-size: 10px; letter-spacing: -0.02em; }
 @media (max-width: 520px), (max-height: 520px) { .swatch-name.long { font-size: 9px; } }
+
+/* ---------- Idle overlay: title fades back in over the painting ---------- */
+#title.idle {
+  background: rgba(255, 255, 255, 0.42);
+  opacity: 0; transition: opacity .6s ease;
+}
+#title.idle.show { opacity: 1; }
+#title.idle .title-map { display: none; }
+#title.idle .title-text, #title.idle .title-kicker {
+  text-shadow: 0 0 2px #fff, 0 0 10px #fff, 0 0 26px rgba(255,255,255,.95), 0 0 50px rgba(255,255,255,.8);
+}
